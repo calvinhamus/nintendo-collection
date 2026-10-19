@@ -1,0 +1,31 @@
+name: Update covers
+
+# Downloads box art into covers/ and rewrites covers.js. Run it once after
+# pushing the repo, and again after adding games to games.js.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [games.js, scripts/update_covers.py]
+
+permissions:
+  contents: write
+
+jobs:
+  covers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - name: Fetch box art
+        run: python3 scripts/update_covers.py
+      - name: Commit covers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add covers covers.js
+          git diff --cached --quiet || git commit -m "Update covers"
+          git push
