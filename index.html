@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nintendo Collection</title>
+<meta name="theme-color" content="#12202b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-display: "Unbounded", "Arial Black", sans-serif;
+    --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+    --radius-tile: 6px;
+    --radius-sheet: 18px;
+    --gutter: 16px;
+  }
+  /* Each set is its own world. */
+  body[data-set="metroid"] {
+    --bg: #12202b; --bg-2: #1a2e3c; --ink: #eef3f6; --ink-2: #9fb3c1;
+    --accent: #e8632b; --accent-ink: #1a0d05; --accent-2: #f2c14e;
+    --line: #2b4456; --tile-bg: #0c1720; --label: #e8632b; --label-ink: #1a0d05;
+    --stripe: #f2c14e;
+  }
+  body[data-set="hal"] {
+    --bg: #ffe6ee; --bg-2: #ffd3e1; --ink: #3a1f4d; --ink-2: #7a5a8a;
+    --accent: #d93a72; --accent-ink: #ffffff; --accent-2: #3f63d4;
+    --line: #f2b8cb; --tile-bg: #fff5f8; --label: #3a1f4d; --label-ink: #ffe6ee;
+    --stripe: #b8235a;
+  }
+  body[data-set="ff"] {
+    --bg: #e8edf6; --bg-2: #dbe3f1; --ink: #18203d; --ink-2: #56608a;
+    --accent: #2f5fc8; --accent-ink: #ffffff; --accent-2: #8a6fcf;
+    --line: #c3cee3; --tile-bg: #f5f7fc; --label: #18203d; --label-ink: #e8edf6;
+    --stripe: #2f5fc8;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+    transition: background-color .35s ease, color .35s ease;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* Set switcher */
+  .switcher {
+    position: sticky; top: 0; z-index: 20; background: var(--bg);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top);
+    transition: background-color .35s ease;
+  }
+  .switcher .wrap { display: flex; gap: 6px; padding-top: 10px; padding-bottom: 10px; overflow-x: auto; }
+  .set-tab {
+    flex: 1 0 auto; border: 2px solid var(--line); background: transparent;
+    border-radius: 10px 10px 4px 4px; padding: 8px 12px; cursor: pointer;
+    font-family: var(--font-display); font-weight: 500; font-size: 13px; color: var(--ink-2);
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0;
+  }
+  .set-tab small { font-family: var(--font-body); font-size: 12px; font-weight: 400; }
+  .set-tab[aria-selected="true"] { background: var(--label); color: var(--label-ink); border-color: var(--label); }
+
+  /* Cartridge label hero */
+  .label {
+    margin: 20px 0 8px; background: var(--label); color: var(--label-ink);
+    border-radius: 14px 14px 6px 6px; overflow: hidden; position: relative;
+  }
+  .label-body { padding: 22px 20px 18px; }
+  .label h1 {
+    font-family: var(--font-display); font-weight: 900; margin: 0;
+    font-size: clamp(34px, 9vw, 72px); line-height: .95; letter-spacing: -0.02em;
+  }
+  .label p { margin: 10px 0 0; max-width: 60ch; opacity: .85; }
+  .stripe { position: relative; height: 46px; background: rgba(0,0,0,.18); }
+  .stripe-fill { position: absolute; inset: 0 auto 0 0; background: var(--stripe); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .stripe-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; font-family: var(--font-display); font-weight: 700; font-size: 15px;
+    color: var(--label-ink);
+  }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 8px 2px 0; color: var(--ink-2); font-size: 14px; }
+  .stats b { color: var(--ink); }
+
+  /* Controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0 6px; }
+  .search {
+    flex: 1 1 220px; min-width: 0; padding: 10px 12px; border-radius: 8px;
+    border: 2px solid var(--line); background: var(--tile-bg);
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    border: 2px solid var(--line); background: transparent; border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; font-size: 14px; color: var(--ink-2);
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* Systems */
+  .divider { margin: 34px 0 4px; padding-top: 18px; border-top: 3px solid var(--ink); }
+  .divider h2 { font-family: var(--font-display); font-size: 20px; margin: 0; }
+  .divider p { margin: 4px 0 0; color: var(--ink-2); max-width: 60ch; }
+  section.system { margin-top: 26px; }
+  .sys-head {
+    width: 100%; display: flex; align-items: baseline; gap: 12px; background: none; border: 0;
+    padding: 6px 0; cursor: pointer; text-align: left; border-bottom: 1px solid var(--line);
+  }
+  .sys-head h3 { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin: 0; flex: 1; }
+  .sys-head .count { color: var(--ink-2); font-size: 14px; white-space: nowrap; }
+  .sys-head .caret { transition: transform .2s; color: var(--ink-2); }
+  section.system.collapsed .caret { transform: rotate(-90deg); }
+  section.system.collapsed .grid { display: none; }
+  .sys-bar { height: 4px; background: var(--line); margin-top: -1px; }
+  .sys-bar span { display: block; height: 100%; background: var(--accent); }
+
+  .grid {
+    display: grid; gap: 14px 12px; margin-top: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); } }
+  .tile { background: none; border: 0; padding: 0; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+  .cover {
+    position: relative; aspect-ratio: 3 / 4; border-radius: var(--radius-tile); overflow: hidden;
+    background: var(--tile-bg); border: 1px solid var(--line);
+  }
+  .cover img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1) contrast(.9); opacity: .55; transition: filter .3s, opacity .3s; }
+  .tile.owned .cover img { filter: none; opacity: 1; }
+  /* eShop key art is square: show it whole on a blurred copy of itself. */
+  .cover.sq::before { content: ""; position: absolute; inset: -12px; background: var(--art) center / cover; filter: blur(14px) saturate(1.2); opacity: .7; }
+  .cover.sq img { position: relative; object-fit: contain; }
+  .tile:not(.owned) .cover.sq::before { filter: blur(14px) grayscale(1); opacity: .35; }
+  .placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 8px; background: var(--bg-2); color: var(--ink-2);
+    font-family: var(--font-display); font-size: 11px; font-weight: 500; line-height: 1.2;
+  }
+  .placeholder::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 18%; background: var(--line); }
+  .tile.owned .placeholder { background: var(--accent); color: var(--accent-ink); }
+  .tile.owned .placeholder::before { background: rgba(0,0,0,.15); }
+  .badge {
+    position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); display: none; place-items: center;
+    font-weight: 700; font-size: 15px; box-shadow: 0 0 0 2px var(--tile-bg);
+  }
+  .tile.owned .badge { display: grid; }
+  .star { position: absolute; top: 6px; left: 6px; color: var(--accent-2); font-size: 18px; display: none; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .tile.wish .star { display: block; }
+  .tile.skip .cover { border-style: dashed; }
+  .t-title { font-size: 13px; line-height: 1.25; font-weight: 700; }
+  .t-meta { font-size: 12px; color: var(--ink-2); line-height: 1.2; }
+  .t-price { font-size: 12px; color: var(--ink); }
+
+  .empty { padding: 40px 0; color: var(--ink-2); }
+
+  footer { margin: 50px 0 40px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 14px; }
+  footer .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .btn {
+    border: 2px solid var(--ink); background: transparent; border-radius: 8px; padding: 8px 14px;
+    cursor: pointer; font-weight: 700; font-size: 14px;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+  /* Detail sheet */
+  .scrim { position: fixed; inset: 0; background: rgba(10,12,20,.55); z-index: 40; display: none; }
+  .scrim.open { display: block; }
+  .sheet {
+    position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow-y: auto;
+    background: var(--bg); color: var(--ink); border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    padding: 18px var(--gutter) calc(22px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet.open { transform: none; }
+  @media (min-width: 700px) {
+    .sheet { left: 50%; right: auto; width: 560px; bottom: auto; top: 50%; border-radius: var(--radius-sheet);
+      transform: translate(-50%, -46%); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+    .sheet.open { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+  }
+  .sheet-top { display: grid; grid-template-columns: 108px 1fr; gap: 16px; align-items: start; }
+  .sheet-top .cover img { filter: none; opacity: 1; }
+  .sheet h2 { font-family: var(--font-display); font-size: 20px; line-height: 1.15; margin: 0 0 6px; }
+  .sheet .meta { color: var(--ink-2); font-size: 14px; }
+  .sheet .note { margin-top: 8px; font-size: 14px; }
+  .close { position: absolute; top: 10px; right: 12px; border: 0; background: none; font-size: 26px; cursor: pointer; color: var(--ink-2); padding: 4px 8px; }
+  .toggle-row { display: flex; gap: 8px; margin: 18px 0 14px; }
+  .toggle-row .btn { flex: 1; }
+  .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .field { display: grid; gap: 4px; margin-bottom: 12px; }
+  .field label { font-size: 14px; font-weight: 700; }
+  .field input, .field select, .field textarea {
+    padding: 10px 12px; border-radius: 8px; border: 2px solid var(--line); background: var(--tile-bg); width: 100%;
+  }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .price-box { margin: 4px 0 14px; padding: 10px 12px; border-radius: 8px; background: var(--bg-2); font-size: 14px; }
+  .price-box a { color: var(--accent); font-weight: 700; }
+  body[data-set="metroid"] .price-box a { color: var(--accent-2); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; z-index: 60;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body data-set="metroid">
+
+<nav class="switcher" aria-label="Collections">
+  <div class="wrap" role="tablist" id="tabs"></div>
+</nav>
+
+<main class="wrap">
+  <header class="label" id="label">
+    <div class="label-body">
+      <h1 id="setName"></h1>
+      <p id="setScope"></p>
+    </div>
+    <div class="stripe" aria-hidden="true">
+      <div class="stripe-fill" id="stripeFill"></div>
+      <div class="stripe-text"><span id="stripeLeft"></span><span id="stripeRight"></span></div>
+    </div>
+  </header>
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <label class="sr" for="search">Search this collection</label>
+    <input class="search" id="search" type="search" placeholder="Search titles" autocomplete="off">
+    <div class="chips" role="group" aria-label="Filter">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="missing" aria-pressed="false">Missing</button>
+      <button class="chip" data-filter="owned" aria-pressed="false">Owned</button>
+      <button class="chip" data-filter="wish" aria-pressed="false">Wishlist</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    <div>Your collection saves in this browser. Export a backup before clearing site data, and import it on your phone to carry it over.</div>
+    <div class="actions">
+      <button class="btn" id="exportBtn">Export collection</button>
+      <button class="btn" id="importBtn">Import collection</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
+  </footer>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="games.js"></script>
+<script src="covers.js"></script>
+<script>
+(function () {
+  "use strict";
+  var STORE_KEY = "nintendo-collection:v1";
+  var VIEW_KEY = "nintendo-collection:view";
+  var WIKI_KEY = "nintendo-collection:wiki2";
+  var SETS = window.SETS, SYSTEMS = window.SYSTEMS;
+  var COVERS = window.COVERS || {};
+  var PRICES = {};
+
+  function slug(s) {
+    return s.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
+      .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  var GAMES = window.GAMES.map(function (r) {
+    var g = { set: r[0], sys: r[1], title: r[2], year: r[3], region: r[4], note: r[5] || "" };
+    g.id = [g.set, g.sys, slug(g.title), g.region.toLowerCase()].join("-");
+    g.counts = !/^(Digital only|Upcoming)/i.test(g.note);
+    return g;
+  });
+
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+  }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+  var data = load(STORE_KEY, {});
+  var view = load(VIEW_KEY, { set: "metroid", filter: "all", collapsed: {} });
+  var wikiCache = load(WIKI_KEY, {});
+  var query = "";
+
+  function rec(id) { return data[id] || {}; }
+  function setRec(id, patch) {
+    var r = Object.assign({}, rec(id), patch);
+    Object.keys(r).forEach(function (k) { if (r[k] === "" || r[k] === false || r[k] == null) delete r[k]; });
+    if (Object.keys(r).length) data[id] = r; else delete data[id];
+    save(STORE_KEY, data);
+  }
+
+  var REGION_LABEL = { NA: "US", JP: "Japan", AS: "Asia" };
+  var COND_LABEL = { loose: "Loose", cib: "Complete in box", "new": "New / sealed" };
+  function money(n) { return "$" + Number(n).toFixed(2).replace(/\.00$/, ""); }
+  function priceFor(g) {
+    var p = PRICES[g.id]; if (!p) return null;
+    var c = rec(g.id).o ? (rec(g.id).c || "loose") : "loose";
+    var v = p[c] != null ? p[c] : p.loose;
+    return v != null ? v : null;
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  // ── Tabs
+  var tabs = document.getElementById("tabs");
+  function renderTabs() {
+    tabs.innerHTML = SETS.map(function (s) {
+      var games = GAMES.filter(function (g) { return g.set === s.key && g.counts; });
+      var owned = games.filter(function (g) { return rec(g.id).o; }).length;
+      return '<button class="set-tab" role="tab" data-set="' + s.key + '" aria-selected="' + (view.set === s.key) + '">' +
+        esc(s.name) + '<small>' + owned + " of " + games.length + "</small></button>";
+    }).join("");
+  }
+  tabs.addEventListener("click", function (e) {
+    var b = e.target.closest(".set-tab"); if (!b) return;
+    view.set = b.dataset.set; save(VIEW_KEY, view); render(); window.scrollTo({ top: 0 });
+  });
+
+  // ── Filters
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () { view.filter = c.dataset.filter; save(VIEW_KEY, view); render(); });
+  });
+  document.getElementById("search").addEventListener("input", function (e) { query = e.target.value.trim().toLowerCase(); renderList(); });
+
+  // ── Header
+  function renderHeader() {
+    var s = SETS.find(function (x) { return x.key === view.set; });
+    document.body.dataset.set = s.key;
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", getComputedStyle(document.body).getPropertyValue("--bg").trim());
+    document.title = s.name + " · Nintendo Collection";
+    document.getElementById("setName").textContent = s.name;
+    document.getElementById("setScope").textContent = s.scope;
+    var games = GAMES.filter(function (g) { return g.set === s.key && g.counts; });
+    var owned = games.filter(function (g) { return rec(g.id).o; });
+    var pct = games.length ? Math.round(owned.length / games.length * 100) : 0;
+    document.getElementById("stripeFill").style.width = pct + "%";
+    document.getElementById("stripeLeft").textContent = owned.length + " of " + games.length + " owned";
+    document.getElementById("stripeRight").textContent = pct + "%";
+    var wish = GAMES.filter(function (g) { return g.set === s.key && rec(g.id).w; }).length;
+    var paid = owned.reduce(function (a, g) { return a + (parseFloat(rec(g.id).p) || 0); }, 0);
+    var value = owned.reduce(function (a, g) { var v = priceFor(g); return a + (v || 0); }, 0);
+    var missingCost = games.filter(function (g) { return !rec(g.id).o; }).reduce(function (a, g) { var v = priceFor(g); return a + (v || 0); }, 0);
+    var parts = ["<span><b>" + (games.length - owned.length) + "</b> to find</span>", "<span><b>" + wish + "</b> on wishlist</span>"];
+    if (paid) parts.push("<span><b>" + money(paid) + "</b> paid</span>");
+    if (value) parts.push("<span><b>" + money(value) + "</b> current value</span>");
+    if (missingCost) parts.push("<span><b>" + money(missingCost) + "</b> to finish, loose</span>");
+    document.getElementById("stats").innerHTML = parts.join("");
+    document.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.filter === view.filter)); });
+  }
+
+  // ── List
+  var list = document.getElementById("list");
+  function matches(g) {
+    var r = rec(g.id);
+    if (view.filter === "owned" && !r.o) return false;
+    if (view.filter === "missing" && (r.o || !g.counts)) return false;
+    if (view.filter === "wish" && !r.w) return false;
+    if (query && g.title.toLowerCase().indexOf(query) === -1 && (g.note || "").toLowerCase().indexOf(query) === -1) return false;
+    return true;
+  }
+  function coverSrc(g) { return COVERS[g.id] || wikiCache[g.id] || ""; }
+  function coverHTML(g, lazy) {
+    var src = coverSrc(g);
+    if (!src) return '<div class="cover"><div class="placeholder">' + esc(SYSTEMS[g.sys].name) + "</div>";
+    var sq = /img-eshop|\.sq\.jpg$/.test(src);
+    return '<div class="cover' + (sq ? " sq" : "") + '"' + (sq ? ' style="--art:url(\'' + esc(src) + '\')"' : "") + ">" +
+      "<img" + (lazy ? ' loading="lazy"' : "") + ' alt="" referrerpolicy="no-referrer" src="' + esc(src) + '" data-id="' + g.id + '" data-sys="' + esc(SYSTEMS[g.sys].name) + '" onerror="coverFail(this)">';
+  }
+  // A cover that fails to load tries Wikipedia once, then falls back to the placeholder.
+  window.coverFail = function (img) {
+    var c = img.parentNode, g = GAMES.find(function (x) { return x.id === img.dataset.id; });
+    function giveUp() {
+      if (!img.isConnected) return;
+      var ph = document.createElement("div");
+      ph.className = "placeholder"; ph.textContent = img.dataset.sys || "";
+      c.classList.remove("sq"); c.style.removeProperty("--art"); img.replaceWith(ph);
+    }
+    if (img.dataset.tried || !g || !wikiTitle(g)) return giveUp();
+    img.dataset.tried = "1";
+    wikiLookup(g).then(function (src) {
+      if (!src) return giveUp();
+      c.classList.remove("sq"); c.style.removeProperty("--art"); img.src = src;
+    }, giveUp);
+  };
+  function tileHTML(g) {
+    var r = rec(g.id);
+    var cls = "tile" + (r.o ? " owned" : "") + (r.w ? " wish" : "") + (g.counts ? "" : " skip");
+    var price = priceFor(g);
+    var meta = g.year + " · " + REGION_LABEL[g.region] + (g.counts ? "" : " · " + g.note.split(/[:(]/)[0].trim());
+    return '<button class="' + cls + '" data-id="' + g.id + '" aria-label="' + esc(g.title) + (r.o ? ", owned" : "") + '">' +
+      coverHTML(g, true) +
+        '<span class="badge" aria-hidden="true">✓</span><span class="star" aria-hidden="true">★</span>' +
+      "</div>" +
+      '<div class="t-title">' + esc(g.title) + "</div>" +
+      '<div class="t-meta">' + esc(meta) + "</div>" +
+      (price != null ? '<div class="t-price">' + money(price) + "</div>" : "") +
+    "</button>";
+  }
+  function renderList() {
+    var games = GAMES.filter(function (g) { return g.set === view.set; });
+    var bySys = {};
+    games.forEach(function (g) { (bySys[g.sys] = bySys[g.sys] || []).push(g); });
+    var keys = Object.keys(bySys).sort(function (a, b) { return SYSTEMS[a].order - SYSTEMS[b].order; });
+    var html = "", shownAny = false, dividerDone = false;
+    keys.forEach(function (k) {
+      var all = bySys[k], shown = all.filter(matches);
+      if (!shown.length) return;
+      shownAny = true;
+      if (SYSTEMS[k].exception && !dividerDone) {
+        dividerDone = true;
+        html += '<div class="divider"><h2>Mainline exceptions</h2><p>The original North American release of each numbered entry and its direct sequels, on the platform it launched on.</p></div>';
+      }
+      var counted = all.filter(function (g) { return g.counts; });
+      var own = counted.filter(function (g) { return rec(g.id).o; }).length;
+      var key = view.set + ":" + k, collapsed = view.collapsed[key];
+      html += '<section class="system' + (collapsed ? " collapsed" : "") + '" data-key="' + key + '">' +
+        '<button class="sys-head" aria-expanded="' + !collapsed + '"><h3>' + esc(SYSTEMS[k].name) + "</h3>" +
+        '<span class="count">' + own + " / " + counted.length + '</span><span class="caret" aria-hidden="true">▾</span></button>' +
+        '<div class="sys-bar"><span style="width:' + (counted.length ? own / counted.length * 100 : 0) + '%"></span></div>' +
+        '<div class="grid">' + shown.map(tileHTML).join("") + "</div></section>";
+    });
+    if (!shownAny) {
+      html = '<p class="empty">' + (view.filter === "wish" ? "Nothing on the wishlist yet. Open a game and add it." :
+        view.filter === "owned" ? "Nothing marked as owned yet. Open a game and mark it owned." :
+        view.filter === "missing" ? "Every counted game in this set is owned." : "No titles match that search.") + "</p>";
+    }
+    list.innerHTML = html;
+    fetchWikiCovers(games);
+  }
+  list.addEventListener("click", function (e) {
+    var head = e.target.closest(".sys-head");
+    if (head) {
+      var sec = head.parentNode, key = sec.dataset.key;
+      view.collapsed[key] = !view.collapsed[key]; save(VIEW_KEY, view);
+      sec.classList.toggle("collapsed"); head.setAttribute("aria-expanded", String(!view.collapsed[key]));
+      return;
+    }
+    var t = e.target.closest(".tile"); if (t) openSheet(t.dataset.id);
+  });
+
+  // ── Detail sheet
+  var sheet = document.getElementById("sheet"), scrim = document.getElementById("scrim"), lastFocus = null;
+  function pcLink(g) {
+    var q = g.title + " " + SYSTEMS[g.sys].name;
+    return "https://www.pricecharting.com/search-products?type=prices&q=" + encodeURIComponent(q);
+  }
+  function openSheet(id) {
+    var g = GAMES.find(function (x) { return x.id === id; }), r = rec(id), p = PRICES[id];
+    lastFocus = document.activeElement;
+    sheet.innerHTML =
+      '<button class="close" aria-label="Close">×</button>' +
+      '<div class="sheet-top">' + coverHTML(g, false) +
+      "</div><div>" +
+        '<h2 id="sheetTitle">' + esc(g.title) + "</h2>" +
+        '<div class="meta">' + esc(SYSTEMS[g.sys].name) + " · " + g.year + " · " + REGION_LABEL[g.region] + "</div>" +
+        (g.note ? '<div class="note">' + esc(g.note) + "</div>" : "") +
+      "</div></div>" +
+      '<div class="toggle-row">' +
+        '<button class="btn" data-act="own" aria-pressed="' + !!r.o + '">' + (r.o ? "Owned ✓" : "Mark owned") + "</button>" +
+        '<button class="btn" data-act="wish" aria-pressed="' + !!r.w + '">' + (r.w ? "On wishlist ★" : "Add to wishlist") + "</button>" +
+      "</div>" +
+      '<div class="price-box">' +
+        (p ? "Average sale: " + ["loose", "cib", "new"].filter(function (k) { return p[k] != null; }).map(function (k) { return COND_LABEL[k] + " " + money(p[k]); }).join(", ") + ". " : "") +
+        '<a href="' + pcLink(g) + '" target="_blank" rel="noopener">Check prices on PriceCharting</a></div>' +
+      '<div class="two"><div class="field"><label for="fCond">Condition</label><select id="fCond">' +
+        '<option value="">Not set</option>' +
+        Object.keys(COND_LABEL).map(function (k) { return '<option value="' + k + '"' + (r.c === k ? " selected" : "") + ">" + COND_LABEL[k] + "</option>"; }).join("") +
+      "</select></div>" +
+      '<div class="field"><label for="fPaid">Price paid</label><input id="fPaid" inputmode="decimal" placeholder="0.00" value="' + esc(r.p || "") + '"></div></div>' +
+      '<div class="field"><label for="fNote">Notes</label><textarea id="fNote" rows="2" placeholder="Where you found it, box condition, variant details">' + esc(r.n || "") + "</textarea></div>";
+    sheet.classList.add("open"); scrim.classList.add("open");
+    sheet.querySelector(".close").focus();
+    sheet.dataset.id = id;
+  }
+  function closeSheet() {
+    sheet.classList.remove("open"); scrim.classList.remove("open");
+    render();
+    if (lastFocus) { var t = list.querySelector('[data-id="' + sheet.dataset.id + '"]'); (t || lastFocus).focus(); }
+  }
+  scrim.addEventListener("click", closeSheet);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sheet.classList.contains("open")) closeSheet(); });
+  sheet.addEventListener("click", function (e) {
+    if (e.target.closest(".close")) return closeSheet();
+    var b = e.target.closest("[data-act]"); if (!b) return;
+    var id = sheet.dataset.id, r = rec(id);
+    if (b.dataset.act === "own") {
+      setRec(id, { o: !r.o, w: !r.o ? false : r.w });
+      toast(!r.o ? "Marked owned" : "Removed from owned");
+    } else {
+      setRec(id, { w: !r.w });
+      toast(!r.w ? "Added to wishlist" : "Removed from wishlist");
+    }
+    openSheet(id);
+  });
+  sheet.addEventListener("change", function (e) {
+    var id = sheet.dataset.id;
+    if (e.target.id === "fCond") setRec(id, { c: e.target.value });
+    if (e.target.id === "fPaid") setRec(id, { p: e.target.value.replace(/[^0-9.]/g, "") });
+    if (e.target.id === "fNote") setRec(id, { n: e.target.value.trim() });
+  });
+
+  // ── Export / import
+  document.getElementById("exportBtn").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify({ app: "nintendo-collection", version: 1, exported: new Date().toISOString(), games: data }, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "nintendo-collection-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("Collection exported");
+  });
+  var importFile = document.getElementById("importFile");
+  document.getElementById("importBtn").addEventListener("click", function () { importFile.click(); });
+  importFile.addEventListener("change", function () {
+    var f = importFile.files[0]; if (!f) return;
+    f.text().then(function (txt) {
+      var j = JSON.parse(txt), incoming = j.games || j;
+      if (typeof incoming !== "object") throw new Error();
+      var n = 0;
+      Object.keys(incoming).forEach(function (k) { data[k] = incoming[k]; n++; });
+      save(STORE_KEY, data); render(); toast("Imported " + n + " games");
+    }).catch(function () { toast("That file isn't a collection export. Choose a file made with Export collection."); });
+    importFile.value = "";
+  });
+
+  var toastEl = document.getElementById("toast"), toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  // ── Cover fallback: Wikipedia lead image for games the bundled art doesn't cover.
+  var wikiPending = {};
+  // Wikipedia article for games whose title isn't the article name; null skips the lookup.
+  var WIKI_TITLES = {
+    "ff-switch2-final-fantasy-vii-remake-intergrade-na": "Final Fantasy VII Remake",
+    "ff-switch2-final-fantasy-xiv-online-na": "Final Fantasy XIV",
+    "ff-ps3-final-fantasy-xiv-online-a-realm-reborn-na": "Final Fantasy XIV",
+    "ff-switch-final-fantasy-i-vi-pixel-remaster-collection-na": "Final Fantasy Pixel Remaster",
+    "ff-switch-final-fantasy-vii-and-final-fantasy-viii-remastered-twin-pack-na": null,
+    "ff-switch-final-fantasy-vii-and-final-fantasy-viii-remastered-twin-pack-as": null,
+    "hal-3ds-boxboxboy-na": null,
+    "hal-3ds-bye-bye-boxboy-na": null
+  };
+  function wikiTitle(g) {
+    if (g.id in WIKI_TITLES) return WIKI_TITLES[g.id];
+    return g.title.replace(/ \((Sunsoft)\)$/, "").replace(/ Nintendo Switch 2 Edition.*$/, "")
+      .replace(/ (Special|Legacy|Limited) Edition$/, "").replace(/: Special Edition$/, "");
+  }
+  function wikiLookup(g) {
+    if (g.id in wikiCache) return Promise.resolve(wikiCache[g.id]);
+    var url = "https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&redirects=1&prop=pageimages&pilicense=any&pithumbsize=320&titles=" + encodeURIComponent(wikiTitle(g));
+    return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      var pages = (j.query && j.query.pages) || {}, src = "";
+      Object.keys(pages).forEach(function (k) { if (pages[k].thumbnail) src = pages[k].thumbnail.source; });
+      wikiCache[g.id] = src; save(WIKI_KEY, wikiCache);
+      return src;
+    });
+  }
+  function fetchWikiCovers(games) {
+    var need = games.filter(function (g) { return !COVERS[g.id] && !(g.id in wikiCache) && !wikiPending[g.id] && wikiTitle(g); }).slice(0, 40);
+    need.forEach(function (g) {
+      wikiPending[g.id] = 1;
+      var url = "https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&redirects=1&prop=pageimages&pilicense=any&pithumbsize=320&titles=" + encodeURIComponent(wikiTitle(g));
+      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        var pages = (j.query && j.query.pages) || {}, src = "";
+        Object.keys(pages).forEach(function (k) { if (pages[k].thumbnail) src = pages[k].thumbnail.source; });
+        wikiCache[g.id] = src; save(WIKI_KEY, wikiCache);
+        if (src) {
+          var cover = list.querySelector('[data-id="' + g.id + '"] .cover');
+          if (cover) {
+            var tmp = document.createElement("div"); tmp.innerHTML = coverHTML(g, false) + "</div>";
+            var fresh = tmp.firstChild, ph = cover.querySelector(".placeholder");
+            cover.className = fresh.className; cover.setAttribute("style", fresh.getAttribute("style") || "");
+            if (ph) ph.replaceWith(fresh.querySelector("img"));
+          }
+        }
+      }).catch(function () {});
+    });
+  }
+
+  function render() { renderTabs(); renderHeader(); renderList(); }
+
+  fetch("prices.json").then(function (r) { return r.ok ? r.json() : {}; })
+    .then(function (j) { PRICES = j.prices || j || {}; render(); })
+    .catch(function () { render(); });
+  render();
+})();
+</script>
+</body>
+</html>
